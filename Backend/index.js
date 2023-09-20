@@ -1,3 +1,4 @@
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -20,20 +21,18 @@ app.post('/shorten', (req, res) => {
     return res.status(400).json({ error: 'Original URL is required.' });
   }
 
-  let shortUrl;
   if (customAlias) {
     if (customUrls[customAlias]) {
       return res.status(400).json({ error: 'Custom alias already exists.' });
     }
+    // Store the custom alias and its corresponding original URL
     customUrls[customAlias] = originalUrl;
-    shortUrl = customAlias;
+    res.json({ shortUrl: `${req.protocol}://${req.get('host')}/${customAlias}` });
   } else {
     const shortId = generateRandomString(6);
     urlMap[shortId] = { url: originalUrl, timestamp: Math.floor(Date.now() / 1000) };
-    shortUrl = `${req.protocol}://${req.get('host')}/${shortId}`;
+    res.json({ shortUrl: `${req.protocol}://${req.get('host')}/${shortId}` });
   }
-
-  res.json({ shortUrl });
 });
 
 // API endpoint to redirect to the original URL
@@ -41,6 +40,7 @@ app.get('/:shortUrl', (req, res) => {
   const { shortUrl } = req.params;
 
   if (customUrls[shortUrl]) {
+    // Redirect to the custom alias URL
     return res.redirect(customUrls[shortUrl]);
   } else if (urlMap[shortUrl]) {
     const { url, timestamp } = urlMap[shortUrl];
@@ -48,6 +48,7 @@ app.get('/:shortUrl', (req, res) => {
       delete urlMap[shortUrl];
       return res.status(404).send('URL not found or expired.');
     }
+    // Redirect to the original URL
     return res.redirect(url);
   } else {
     return res.status(404).send('URL not found.');
@@ -74,3 +75,6 @@ function isUrlExpired(timestamp) {
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+
+// https://petapixel.com/assets/uploads/2015/05/montblancpanoramahead.jpg
